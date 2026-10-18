@@ -424,7 +424,7 @@
       var d=await r.json();
       if(d && d.url){ window.location.href=d.url; }
       else { err.style.color='#a8534f'; err.textContent=(d && d.error) || 'Something went wrong. Please try again.'; }
-    }catch(e){ err.style.color='#a8534f'; err.textContent='Could not reach payment. Please try again in a moment.'; }
+    }catch(e){ err.style.color='#a8534f'; err.textContent='ERR: '+((e&&e.message)?e.message:String(e)); }
   }
   // Show success banner when they return from Stripe
   try{
