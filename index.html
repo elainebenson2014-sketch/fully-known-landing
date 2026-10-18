@@ -161,7 +161,7 @@
       <a href="#sessions">Individual Sessions</a>
       <a href="#book">Book</a>
       <a href="#author">About</a>
-      <a class="btn btn-gold nav-cta" href="https://thehealedplace.org">Register</a>
+      <a class="btn btn-gold nav-cta" href="#" onclick="openReg();return false;">Register</a>
     </nav>
     <button class="menu-btn" onclick="document.querySelector('.nav-links').style.display=(getComputedStyle(document.querySelector('.nav-links')).display==='none'?'flex':'none');this.blur();">☰</button>
   </div>
@@ -174,7 +174,7 @@
   <h1>Seen. Known.<br>Loved. Free.</h1>
   <p class="sub">Fully Known helps adults, children and teens understand their identity in Christ, recognize what has shaped their story, and walk forward in truth and freedom.</p>
   <div class="cta-row">
-    <a class="btn btn-gold" href="https://thehealedplace.org">Register for Foundations</a>
+    <a class="btn btn-gold" href="#" onclick="openReg();return false;">Register for Foundations</a>
     <a class="btn btn-ghost" href="#sessions">Explore individual sessions</a>
   </div>
   <div class="badges">
@@ -290,8 +290,8 @@
         <div class="when">October 25 – December 13, 2026 · Eight weekly Sunday sessions</div>
         <div class="price">$199</div>
         <div style="color:#d9c7db;font-size:14px;margin:4px 0 20px;">Program tuition</div>
-        <a class="btn btn-gold" href="https://thehealedplace.org" style="width:100%;justify-content:center;">Register for Foundations</a>
-        <div class="note">Visit the learning portal for registration and class details.</div>
+        <a class="btn btn-gold" href="#" onclick="openReg();return false;" style="width:100%;justify-content:center;">Register for Foundations</a>
+        <div class="note">Pay the $50 registration fee to unlock the course. The remaining balance is paid in your student portal.</div>
       </div>
     </div>
   </div>
@@ -373,7 +373,7 @@
     <h2>There is room for your story.</h2>
     <p>Register for Foundations starting October 25, 2026. Part 1, Part 2, Kids and Teens classes are coming soon. Request an individual pastoral care session, or ask about books, ministry groups and merchandise.</p>
     <div class="cta-row">
-      <a class="btn btn-gold" href="https://thehealedplace.org">Register for Foundations</a>
+      <a class="btn btn-gold" href="#" onclick="openReg();return false;">Register for Foundations</a>
       <a class="btn btn-ghost" href="mailto:elainebenson@thehealedplace.org?subject=Individual%20Session">Request an individual session</a>
     </div>
   </div>
@@ -384,6 +384,54 @@
   <div class="tag">Fully Known · Seen. Known. Loved. Free.</div>
   <div style="margin-top:10px;font-size:13px;opacity:.8;">© 2026 The Healed Place · A program under NCTS · <a href="mailto:elainebenson@thehealedplace.org" style="color:var(--gold-soft);">elainebenson@thehealedplace.org</a></div>
 </footer>
+
+<!-- ===== Registration modal (pay-first) ===== -->
+<div id="regModal" style="display:none;position:fixed;inset:0;z-index:100;background:rgba(42,20,48,.72);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fffdf9;border:1px solid var(--gold-soft);border-radius:18px;max-width:440px;width:100%;padding:30px;box-shadow:0 30px 80px -20px rgba(0,0,0,.6);">
+    <div class="eyebrow" style="color:var(--gold)">Fully Known Foundations</div>
+    <h3 style="font-family:'Cormorant Garamond',serif;font-size:28px;color:var(--plum);margin:6px 0 6px;">Register &amp; reserve your place</h3>
+    <p style="color:var(--muted);font-size:14.5px;margin:0 0 18px;">Pay the <b>$50 registration fee</b> to create your account and unlock the course. The remaining balance is paid anytime in your student portal.</p>
+    <input id="regName" placeholder="Full name" style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);font-size:15px;margin-bottom:10px;" />
+    <input id="regEmail" type="email" placeholder="Email address" style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);font-size:15px;margin-bottom:6px;" />
+    <div id="regErr" style="color:#a8534f;font-size:13.5px;min-height:18px;margin-bottom:6px;"></div>
+    <button onclick="startReg()" class="btn btn-gold" style="width:100%;justify-content:center;">Continue to payment — $50</button>
+    <button onclick="closeReg()" style="width:100%;margin-top:10px;background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;font-family:'Source Serif 4',serif;">Cancel</button>
+    <p style="font-size:11.5px;color:var(--muted);text-align:center;margin:14px 0 0;">Secure payment by Stripe. You'll get an email to set your password and enter the course.</p>
+  </div>
+</div>
+
+<!-- ===== Success banner after payment ===== -->
+<div id="regSuccess" style="display:none;position:fixed;top:0;left:0;right:0;z-index:110;background:var(--plum);color:var(--cream);text-align:center;padding:16px 20px;font-size:15px;box-shadow:0 8px 24px -10px rgba(0,0,0,.5);">
+  <b style="color:var(--gold-soft);">Thank you — your registration is received!</b> Check your email for a link to set your password and enter the course.
+  <span onclick="document.getElementById('regSuccess').style.display='none'" style="cursor:pointer;margin-left:14px;opacity:.7;">✕</span>
+</div>
+
+<script>
+  // Fully Known course id on The Healed Place instance:
+  var FK_COURSE = "04333d77-ff4f-4e81-8c82-2fc5a30320c8";
+  var REG_ENDPOINT = "https://thehealedplace.org/api/register";
+  function openReg(){ document.getElementById('regModal').style.display='flex'; }
+  function closeReg(){ document.getElementById('regModal').style.display='none'; document.getElementById('regErr').textContent=''; }
+  async function startReg(){
+    var name=(document.getElementById('regName').value||'').trim();
+    var email=(document.getElementById('regEmail').value||'').trim();
+    var err=document.getElementById('regErr');
+    err.style.color='#a8534f'; err.textContent='';
+    if(!name || !email || email.indexOf('@')<0){ err.textContent='Please enter your full name and a valid email.'; return; }
+    err.style.color='#5b3560'; err.textContent='Taking you to secure payment…';
+    try{
+      var r=await fetch(REG_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({program:'certificate',course_id:FK_COURSE,name:name,email:email,origin:'https://fullyknown.us'})});
+      var d=await r.json();
+      if(d && d.url){ window.location.href=d.url; }
+      else { err.style.color='#a8534f'; err.textContent=(d && d.error) || 'Something went wrong. Please try again.'; }
+    }catch(e){ err.style.color='#a8534f'; err.textContent='Could not reach payment. Please try again in a moment.'; }
+  }
+  // Show success banner when they return from Stripe
+  try{
+    var p=new URLSearchParams(location.search);
+    if(p.get('registered')==='1'){ document.getElementById('regSuccess').style.display='block'; }
+  }catch(e){}
+</script>
 
 </body>
 </html>
