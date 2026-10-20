@@ -24,6 +24,12 @@ const REG_FEE = {
   associate: 125, bachelor: 125, master: 125, master2: 125, doctorate: 125, phd: 125,
 };
 
+// Full tuition where a single up-front price exists (certificate only for now).
+// "Pay in full" charges this instead of the registration fee.
+const FULL_PRICE = {
+  certificate: 199,
+};
+
 function cors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -75,7 +81,7 @@ export default async function handler(req, res) {
   if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
 
   try {
-    const { program, course_id, name, email, origin } = req.body || {};
+    const { program, course_id, name, email, origin, pay_full } = req.body || {};
     const nm = String(name || "").trim();
     const em = String(email || "").trim();
     if (!nm || !em || !em.includes("@")) {
@@ -83,8 +89,13 @@ export default async function handler(req, res) {
       return;
     }
     const prog = String(program || "certificate").toLowerCase();
-    const fee = REG_FEE[prog];
-    if (!fee) { res.status(400).json({ error: "Unknown program." }); return; }
+    const regFee = REG_FEE[prog];
+    if (!regFee) { res.status(400).json({ error: "Unknown program." }); return; }
+
+    // Pay in full only where a full price is defined; otherwise charge the reg fee.
+    const wantsFull = pay_full === true || pay_full === "1" || pay_full === 1;
+    const paidFull = wantsFull && !!FULL_PRICE[prog];
+    const fee = paidFull ? FULL_PRICE[prog] : regFee;
 
     if (!process.env.STRIPE_SECRET_KEY) {
       res.status(500).json({ error: "Payment is not configured yet (missing Stripe key)." });
@@ -94,7 +105,7 @@ export default async function handler(req, res) {
     const base = origin || `https://${req.headers.host}`;
     const cents = Math.round(fee * 100);
     const productName = prog === "certificate"
-      ? "Fully Known — Registration Fee"
+      ? (paidFull ? "Fully Known — Full Tuition" : "Fully Known — Registration Fee")
       : "NCTS — Registration Fee";
 
     const params = new URLSearchParams();
@@ -111,6 +122,7 @@ export default async function handler(req, res) {
     params.append("metadata[reg_program]", prog);
     params.append("metadata[reg_name]", nm);
     params.append("metadata[reg_email]", em);
+    params.append("metadata[reg_paid_full]", paidFull ? "1" : "0");
     if (course_id) params.append("metadata[reg_course_id]", String(course_id));
 
     const sr = await fetch("https://api.stripe.com/v1/checkout/sessions", {
