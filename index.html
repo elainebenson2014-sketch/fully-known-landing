@@ -390,13 +390,15 @@
   <div style="background:#fffdf9;border:1px solid var(--gold-soft);border-radius:18px;max-width:440px;width:100%;padding:30px;box-shadow:0 30px 80px -20px rgba(0,0,0,.6);">
     <div class="eyebrow" style="color:var(--gold)">Fully Known Foundations</div>
     <h3 style="font-family:'Cormorant Garamond',serif;font-size:28px;color:var(--plum);margin:6px 0 6px;">Register &amp; reserve your place</h3>
-    <p style="color:var(--muted);font-size:14.5px;margin:0 0 18px;">Pay the <b>$50 registration fee</b> to create your account and unlock the course. The remaining balance is paid anytime in your student portal.</p>
+    <p style="color:var(--muted);font-size:14.5px;margin:0 0 18px;">Choose how you'd like to begin. Either way your account is created instantly and you can start the course today.</p>
     <input id="regName" placeholder="Full name" style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);font-size:15px;margin-bottom:10px;" />
     <input id="regEmail" type="email" placeholder="Email address" style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);font-size:15px;margin-bottom:6px;" />
     <div id="regErr" style="color:#a8534f;font-size:13.5px;min-height:18px;margin-bottom:6px;"></div>
-    <button onclick="startReg()" class="btn btn-gold" style="width:100%;justify-content:center;">Continue to payment — $50</button>
+    <button onclick="startReg(false)" class="btn btn-gold" style="width:100%;justify-content:center;">Reserve my seat — $50 today</button>
+    <button onclick="startReg(true)" style="width:100%;justify-content:center;margin-top:10px;padding:12px 14px;border:1.5px solid var(--plum);background:#fff;color:var(--plum);border-radius:999px;font-size:15px;font-weight:600;cursor:pointer;font-family:'Source Serif 4',serif;">Pay in full — $199</button>
+    <p style="font-size:12px;color:var(--muted);text-align:center;margin:12px 0 0;">Reserve now and pay the rest anytime in your student portal — or pay in full and you're all set.</p>
     <button onclick="closeReg()" style="width:100%;margin-top:10px;background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;font-family:'Source Serif 4',serif;">Cancel</button>
-    <p style="font-size:11.5px;color:var(--muted);text-align:center;margin:14px 0 0;">Secure payment by Stripe. You'll get an email to set your password and enter the course.</p>
+    <p style="font-size:11.5px;color:var(--muted);text-align:center;margin:12px 0 0;">Secure payment by Stripe. You'll get an email to set your password and enter the course.</p>
   </div>
 </div>
 
@@ -412,7 +414,7 @@
   var REG_ENDPOINT = "/api/register";
   function openReg(){ document.getElementById('regModal').style.display='flex'; }
   function closeReg(){ document.getElementById('regModal').style.display='none'; document.getElementById('regErr').textContent=''; }
-  async function startReg(){
+  async function startReg(payFull){
     var name=(document.getElementById('regName').value||'').trim();
     var email=(document.getElementById('regEmail').value||'').trim();
     var err=document.getElementById('regErr');
@@ -420,11 +422,11 @@
     if(!name || !email || email.indexOf('@')<0){ err.textContent='Please enter your full name and a valid email.'; return; }
     err.style.color='#5b3560'; err.textContent='Taking you to secure payment…';
     try{
-      var r=await fetch(REG_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({program:'certificate',course_id:FK_COURSE,name:name,email:email,origin:'https://fullyknown.us'})});
+      var r=await fetch(REG_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({program:'certificate',course_id:FK_COURSE,name:name,email:email,origin:'https://fullyknown.us',pay_full:payFull===true})});
       var d=await r.json();
       if(d && d.url){ window.location.href=d.url; }
       else { err.style.color='#a8534f'; err.textContent=(d && d.error) || 'Something went wrong. Please try again.'; }
-    }catch(e){ err.style.color='#a8534f'; err.textContent='ERR: '+((e&&e.message)?e.message:String(e)); }
+    }catch(e){ err.style.color='#a8534f'; err.textContent='Could not reach payment. Please try again in a moment.'; }
   }
   // Show success banner when they return from Stripe
   try{
